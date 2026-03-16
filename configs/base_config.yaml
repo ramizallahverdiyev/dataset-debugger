@@ -3,9 +3,10 @@
 # ─────────────────────────────────────────
 
 data:
-  raw_dir:        "data/raw"
-  corrupted_dir:  "data/corrupted"
-  dataset_root:   "/kaggle/input/datasets/nikhilshingadiya/tinyimagenet200/tiny-imagenet-200/wnids.txt"
+  data:
+  raw_dir:        "/kaggle/working/data/raw"
+  corrupted_dir:  "/kaggle/working/data/corrupted"
+  dataset_root:   "/kaggle/input/datasets/nikhilshingadiya/tinyimagenet200/tiny-imagenet-200"
   num_classes:    200
   num_workers:    4
 
