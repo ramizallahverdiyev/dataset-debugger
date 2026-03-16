@@ -3,9 +3,9 @@
 # ─────────────────────────────────────────
 
 data:
-  raw_dir:        "/kaggle/working/data/raw"
-  corrupted_dir:  "/kaggle/working/data/corrupted"
-  dataset_root:   "/kaggle/input/datasets/nikhilshingadiya/tinyimagenet200/tiny-imagenet-200"
+  raw_dir:        "data/raw"
+  corrupted_dir:  "data/corrupted"
+  dataset_root:   "data/raw/tiny-imagenet-200"
   num_classes:    200
   num_workers:    4
 
@@ -24,7 +24,7 @@ model:
   num_models:     3           # For model disagreement method
 
 outputs:
-  checkpoints:    "/kaggle/working/checkpoints"
-  scores:         "/kaggle/working/outputs/scores"
-  figures:        "/kaggle/working/outputs/figures"
-  reports:        "/kaggle/working/outputs/reports"
+  checkpoints:    "outputs/checkpoints"
+  scores:         "outputs/scores"
+  figures:        "outputs/figures"
+  reports:        "outputs/reports"

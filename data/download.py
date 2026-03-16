@@ -44,7 +44,21 @@ def download_tiny_imagenet(data_dir: Path = DEFAULT_DATA_DIR, force: bool = Fals
 
 def get_class_labels(data_dir: Path = DEFAULT_DATA_DIR) -> dict:
     """Parse wnids.txt → {class_id: class_index}."""
-    wnids_path = Path(data_dir) / "tiny-imagenet-200" / "wnids.txt"
+    data_dir = Path(data_dir)
+
+    # Try direct path first (data_dir is already tiny-imagenet-200)
+    direct = data_dir / "wnids.txt"
+    nested = data_dir / "tiny-imagenet-200" / "wnids.txt"
+
+    if direct.exists():
+        wnids_path = direct
+    elif nested.exists():
+        wnids_path = nested
+    else:
+        raise FileNotFoundError(
+            f"wnids.txt not found in {data_dir} or {data_dir / 'tiny-imagenet-200'}"
+        )
+
     with open(wnids_path) as f:
         wnids = [line.strip() for line in f.readlines()]
     return {wnid: idx for idx, wnid in enumerate(sorted(wnids))}
@@ -52,7 +66,18 @@ def get_class_labels(data_dir: Path = DEFAULT_DATA_DIR) -> dict:
 
 def get_val_annotations(data_dir: Path = DEFAULT_DATA_DIR) -> dict:
     """Parse val/val_annotations.txt → {filename: class_id}."""
-    val_ann_path = Path(data_dir) / "tiny-imagenet-200" / "val" / "val_annotations.txt"
+    data_dir = Path(data_dir)
+
+    direct = data_dir / "val" / "val_annotations.txt"
+    nested = data_dir / "tiny-imagenet-200" / "val" / "val_annotations.txt"
+
+    if direct.exists():
+        val_ann_path = direct
+    elif nested.exists():
+        val_ann_path = nested
+    else:
+        raise FileNotFoundError(f"val_annotations.txt not found under {data_dir}")
+
     annotations = {}
     with open(val_ann_path) as f:
         for line in f:
