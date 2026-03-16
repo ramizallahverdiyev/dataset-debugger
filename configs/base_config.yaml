@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────
+#  base_config.yaml — General settings
+# ─────────────────────────────────────────
+
+data:
+  raw_dir:        "data/raw"
+  corrupted_dir:  "data/corrupted"
+  dataset_root:   "data/raw/tiny-imagenet-200"
+  num_classes:    200
+  num_workers:    4
+
+training:
+  batch_size:     128
+  epochs:         30
+  lr:             0.1
+  momentum:       0.9
+  weight_decay:   1.0e-4
+  patience:       7           # Early stopping patience
+  seed:           42
+
+model:
+  architecture:   "resnet18"
+  pretrained:     false
+  num_models:     3           # For model disagreement method
+
+outputs:
+  checkpoints:    "outputs/checkpoints"
+  scores:         "outputs/scores"
+  figures:        "outputs/figures"
+  reports:        "outputs/reports"

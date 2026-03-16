@@ -1,0 +1,22 @@
+# Core
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0,<2.0.0
+Pillow>=9.5.0
+pyyaml>=6.0
+requests>=2.31.0
+tqdm>=4.65.0
+
+# ML / Detection
+scikit-learn>=1.3.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# Testing
+pytest>=7.4.0
+
+# UMAP — install separately via:
+# pip install umap-learn --no-build-isolation
+# OR: conda install -c conda-forge umap-learn
+# umap-learn>=0.5.3  ← commented out: llvmlite has no py3.12 wheel on PyPI

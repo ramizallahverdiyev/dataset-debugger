@@ -1,0 +1,31 @@
+# ─────────────────────────────────────────
+#  debugger_config.yaml — Detection settings
+# ─────────────────────────────────────────
+
+corruption:
+  rate:           0.10        # Fraction of labels to flip (10%)
+  seed:           42
+
+suspicion_weights:
+  loss:           0.40
+  embedding:      0.30
+  disagreement:   0.20
+  anomaly:        0.10
+
+detection:
+  threshold:      0.50        # Suspicion score threshold for flagging
+  top_k:          500         # Top-K samples to include in report
+  embedding_top_k: 50         # Neighbors for cosine similarity
+
+anomaly:
+  contamination:  0.10        # Matches corruption rate
+  n_estimators:   200
+  per_class:      true        # Run Isolation Forest per class
+
+visualization:
+  tsne_classes:   20          # Number of classes to include in t-SNE
+  gallery_top_k:  20          # Samples to show in suspicious gallery
+  use_umap:       false       # Set true for faster reduction on large sets
+
+evaluation:
+  top_k_values:   [100, 500, 1000, 2000, 5000]
