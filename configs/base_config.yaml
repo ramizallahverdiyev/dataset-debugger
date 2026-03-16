@@ -25,7 +25,7 @@ model:
   num_models:     3           # For model disagreement method
 
 outputs:
-  checkpoints:    "outputs/checkpoints"
-  scores:         "outputs/scores"
-  figures:        "outputs/figures"
-  reports:        "outputs/reports"
+  checkpoints:    "/kaggle/working/checkpoints"
+  scores:         "/kaggle/working/outputs/scores"
+  figures:        "/kaggle/working/outputs/figures"
+  reports:        "/kaggle/working/outputs/reports"
