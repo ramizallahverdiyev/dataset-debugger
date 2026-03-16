@@ -5,7 +5,7 @@
 data:
   raw_dir:        "data/raw"
   corrupted_dir:  "data/corrupted"
-  dataset_root:   "data/raw/tiny-imagenet-200"
+  dataset_root: "/kaggle/input/tiny-imagenet/tiny-imagenet-200"
   num_classes:    200
   num_workers:    4
 
