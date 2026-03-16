@@ -49,8 +49,7 @@ outputs/scores/
 # ─────────────────────────────────────────
 #  Reports & figures (generated, not source)
 # ─────────────────────────────────────────
-outputs/reports/
-outputs/figures/
+
 
 # ─────────────────────────────────────────
 #  Jupyter notebooks checkpoints
