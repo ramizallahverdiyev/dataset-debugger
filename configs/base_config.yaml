@@ -3,7 +3,6 @@
 # ─────────────────────────────────────────
 
 data:
-  data:
   raw_dir:        "/kaggle/working/data/raw"
   corrupted_dir:  "/kaggle/working/data/corrupted"
   dataset_root:   "/kaggle/input/datasets/nikhilshingadiya/tinyimagenet200/tiny-imagenet-200"
