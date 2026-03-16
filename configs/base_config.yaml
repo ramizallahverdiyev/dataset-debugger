@@ -11,8 +11,8 @@ data:
   num_workers:    4
 
 training:
-  batch_size:     128
-  epochs:         30
+  batch_size:     512
+  epochs:         20
   lr:             0.1
   momentum:       0.9
   weight_decay:   1.0e-4
