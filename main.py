@@ -17,6 +17,7 @@ Usage:
     python main.py --stage visualize   # Only visualization
 """
 
+import os
 import argparse
 import yaml
 import torch
@@ -30,6 +31,7 @@ from data.transforms import get_embedding_transforms
 
 from models.resnet import build_resnet18
 from training.trainer import Trainer
+from training.loss_tracker import LossTracker
 
 from detection.model_disagreement import ModelDisagreement
 from detection.embedding_similarity import EmbeddingSimilarity
@@ -112,6 +114,35 @@ def stage_train(cfg: dict, labels_override: dict):
     return trainers
 
 
+def load_trainers(cfg: dict, device: str) -> list:
+    """Load trained models + loss trackers from checkpoints."""
+    trainers = []
+    for i in range(cfg["model"]["num_models"]):
+        model_name = f"model_{chr(65 + i)}"
+
+        # Load model weights
+        model = build_resnet18(num_classes=cfg["data"]["num_classes"])
+        ckpt_path = f"{cfg['outputs']['checkpoints']}/{model_name}_best.pth"
+        ckpt = torch.load(ckpt_path, map_location=device)
+        model.load_state_dict(ckpt["model_state_dict"])
+        print(f"[✓] Loaded {model_name} from {ckpt_path}")
+
+        t = Trainer(model=model, device=device, model_name=model_name)
+
+        # Load loss tracker
+        tracker_path = f"{cfg['outputs']['checkpoints']}/{model_name}_loss_tracker.npy"
+        if os.path.exists(tracker_path):
+            t.loss_tracker = LossTracker(n_samples=cfg["data"].get("n_train_samples", 100000))
+            t.loss_tracker.load(tracker_path)
+            print(f"[✓] Loaded loss tracker for {model_name}")
+        else:
+            print(f"[!] Loss tracker not found for {model_name} at {tracker_path}")
+
+        trainers.append(t)
+
+    return trainers
+
+
 def stage_detect(cfg: dict, trainers: list, labels_override: dict):
     """Stage 4: Run all detection methods."""
     print("\n[STAGE 4] Running detection methods ...")
@@ -125,7 +156,7 @@ def stage_detect(cfg: dict, trainers: list, labels_override: dict):
     )
     from torch.utils.data import DataLoader
     embed_loader = DataLoader(embed_dataset, batch_size=256,
-                               shuffle=False, num_workers=cfg["data"]["num_workers"])
+                              shuffle=False, num_workers=cfg["data"]["num_workers"])
 
     n_samples = len(embed_dataset)
 
@@ -140,7 +171,7 @@ def stage_detect(cfg: dict, trainers: list, labels_override: dict):
     print("\n  [Method 2] Embedding Similarity ...")
     emb_sim = EmbeddingSimilarity(model=trainers[0].model, device=device)
     embedding_scores = emb_sim.compute_scores(embed_loader,
-                                               top_k=cfg["detection"]["embedding_top_k"])
+                                              top_k=cfg["detection"]["embedding_top_k"])
     embeddings, labels = emb_sim.get_embeddings(embed_loader)
     np.save(f"{cfg['outputs']['scores']}/embedding_scores.npy", embedding_scores)
     np.save(f"{cfg['outputs']['scores']}/embeddings.npy", embeddings)
@@ -149,7 +180,7 @@ def stage_detect(cfg: dict, trainers: list, labels_override: dict):
     # Method 3 — Anomaly Detection
     print("\n  [Method 3] Anomaly Detection ...")
     anomaly_det = AnomalyDetector(contamination=cfg["anomaly"]["contamination"],
-                                   n_estimators=cfg["anomaly"]["n_estimators"])
+                                  n_estimators=cfg["anomaly"]["n_estimators"])
     if cfg["anomaly"]["per_class"]:
         anomaly_scores = anomaly_det.fit_predict_per_class(embeddings, labels)
     else:
@@ -158,7 +189,7 @@ def stage_detect(cfg: dict, trainers: list, labels_override: dict):
 
     # Method 4 — Loss Analysis
     print("\n  [Method 4] Loss Analysis ...")
-    loss_data    = trainers[0].get_loss_scores()
+    loss_data = trainers[0].get_loss_scores()
     loss_analysis = LossAnalysis(
         avg_loss=loss_data["avg_loss"],
         final_loss=loss_data["final_loss"],
@@ -221,8 +252,8 @@ def stage_combine_and_evaluate(cfg: dict, detection_results: dict):
 
 
 def stage_visualize(cfg: dict, detection_results: dict,
-                     suspicion_scores: np.ndarray, corrupted_indices: set,
-                     labels_override: dict):
+                    suspicion_scores: np.ndarray, corrupted_indices: set,
+                    labels_override: dict):
     """Stage 7: Generate visualizations."""
     print("\n[STAGE 7] Generating visualizations ...")
 
@@ -252,7 +283,7 @@ def stage_visualize(cfg: dict, detection_results: dict,
         save_path=f"{cfg['outputs']['figures']}/score_distribution.png"
     )
 
-    # Suspicious gallery (uses raw dataset without transforms for display)
+    # Suspicious gallery
     from data.transforms import get_val_transforms
     raw_dataset = TinyImageNetDataset(
         root=cfg["data"]["dataset_root"], split="train",
@@ -296,18 +327,8 @@ def main():
     if args.stage in ("all", "detect"):
         if args.stage == "detect":
             labels_override, _ = load_corruption_index(cfg["data"]["corrupted_dir"])
-            # Load saved models
-            device  = "cuda" if torch.cuda.is_available() else "cpu"
-            trainers = []
-            for i in range(cfg["model"]["num_models"]):
-                model = build_resnet18(num_classes=cfg["data"]["num_classes"])
-                ckpt  = torch.load(
-                    f"{cfg['outputs']['checkpoints']}/model_{chr(65+i)}_best.pth",
-                    map_location=device
-                )
-                model.load_state_dict(ckpt["model_state_dict"])
-                t = Trainer(model=model, device=device, model_name=f"model_{chr(65+i)}")
-                trainers.append(t)
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            trainers = load_trainers(cfg, device)
 
         detection_results = stage_detect(cfg, trainers, labels_override)
         suspicion_scores, corrupted_indices, metrics = \
@@ -316,20 +337,20 @@ def main():
     if args.stage in ("all", "visualize"):
         if args.stage == "visualize":
             labels_override, _ = load_corruption_index(cfg["data"]["corrupted_dir"])
-            suspicion_scores   = np.load(f"{cfg['outputs']['scores']}/final_suspicion_scores.npy")
-            corrupted_indices  = get_corrupted_set(cfg["data"]["corrupted_dir"])
-            detection_results  = {
-                "embeddings": np.load(f"{cfg['outputs']['scores']}/embeddings.npy"),
-                "labels":     np.load(f"{cfg['outputs']['scores']}/embed_labels.npy"),
-                "loss":       np.load(f"{cfg['outputs']['scores']}/loss_scores.npy"),
-                "embedding":  np.load(f"{cfg['outputs']['scores']}/embedding_scores.npy"),
+            suspicion_scores  = np.load(f"{cfg['outputs']['scores']}/final_suspicion_scores.npy")
+            corrupted_indices = get_corrupted_set(cfg["data"]["corrupted_dir"])
+            detection_results = {
+                "embeddings":   np.load(f"{cfg['outputs']['scores']}/embeddings.npy"),
+                "labels":       np.load(f"{cfg['outputs']['scores']}/embed_labels.npy"),
+                "loss":         np.load(f"{cfg['outputs']['scores']}/loss_scores.npy"),
+                "embedding":    np.load(f"{cfg['outputs']['scores']}/embedding_scores.npy"),
                 "disagreement": np.load(f"{cfg['outputs']['scores']}/disagreement_scores.npy"),
-                "anomaly":    np.load(f"{cfg['outputs']['scores']}/anomaly_scores.npy"),
-                "n_samples":  len(suspicion_scores),
+                "anomaly":      np.load(f"{cfg['outputs']['scores']}/anomaly_scores.npy"),
+                "n_samples":    len(suspicion_scores),
             }
 
         stage_visualize(cfg, detection_results, suspicion_scores,
-                         corrupted_indices, labels_override)
+                        corrupted_indices, labels_override)
 
     print("\n[✓] Dataset Debugger pipeline complete!")
 
