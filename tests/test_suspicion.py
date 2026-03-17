@@ -11,10 +11,10 @@ from detection.suspicion_score import SuspicionScorer
 
 def make_scores(n=1000):
     return {
-        "loss":         np.random.rand(n).astype(np.float32),
-        "embedding":    np.random.rand(n).astype(np.float32),
-        "disagreement": np.random.rand(n).astype(np.float32),
-        "anomaly":      np.random.rand(n).astype(np.float32),
+        "loss_scores":         np.random.rand(n).astype(np.float32),
+        "embedding_scores":    np.random.rand(n).astype(np.float32),
+        "disagreement_scores": np.random.rand(n).astype(np.float32),
+        "anomaly_scores":      np.random.rand(n).astype(np.float32),
     }
 
 
@@ -28,8 +28,7 @@ def test_weights_must_sum_to_one():
 def test_output_range():
     """Combined suspicion score must be in [0, 1]."""
     scorer = SuspicionScorer()
-    s = make_scores()
-    out = scorer.compute(**s)
+    out = scorer.compute(**make_scores())
     assert out.min() >= 0.0
     assert out.max() <= 1.0
 
@@ -37,16 +36,14 @@ def test_output_range():
 def test_output_shape():
     """Output shape must match input."""
     scorer = SuspicionScorer()
-    s = make_scores(n=500)
-    out = scorer.compute(**s)
+    out = scorer.compute(**make_scores(n=500))
     assert out.shape == (500,)
 
 
 def test_top_suspicious_sorted():
     """Top suspicious indices should be sorted by score descending."""
     scorer = SuspicionScorer()
-    s = make_scores()
-    combined = scorer.compute(**s)
+    combined = scorer.compute(**make_scores())
     top = scorer.get_top_suspicious(combined, top_k=100)
     scores_of_top = combined[top]
     assert np.all(scores_of_top[:-1] >= scores_of_top[1:])
@@ -56,7 +53,6 @@ def test_high_score_sample_flagged():
     """Sample with maximum score should appear in top suspicious."""
     scorer = SuspicionScorer()
     s = make_scores(n=1000)
-    # Force sample 42 to be maximally suspicious
     for key in s:
         s[key][42] = 1.0
     combined = scorer.compute(**s)
@@ -67,8 +63,7 @@ def test_high_score_sample_flagged():
 def test_flagged_mask_threshold():
     """Flagged mask should respect the threshold."""
     scorer = SuspicionScorer()
-    s = make_scores()
-    combined = scorer.compute(**s)
+    combined = scorer.compute(**make_scores())
     mask = scorer.get_flagged_mask(combined, threshold=0.7)
     assert np.all(combined[mask] >= 0.7)
     assert np.all(combined[~mask] < 0.7)
@@ -77,8 +72,7 @@ def test_flagged_mask_threshold():
 def test_save_report():
     """Report JSON should be saved with correct structure."""
     scorer = SuspicionScorer()
-    s = make_scores()
-    combined = scorer.compute(**s)
+    combined = scorer.compute(**make_scores())
     labels = np.zeros(1000, dtype=int)
 
     with tempfile.TemporaryDirectory() as tmpdir:
